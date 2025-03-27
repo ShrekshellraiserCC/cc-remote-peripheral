@@ -62,7 +62,7 @@ function rperipheral.wrap(address, ...)
   -- password@hostname:peripheral
   -- or password@id:peripheral
   if type(address) == "table" then
-    address = arg[1] -- manually adjust this so when you call the table, it gets rid of self
+    address = ... -- manually adjust this so when you call the table, it gets rid of self
   end
   address = rperipheral.lookup[address] or address
   local isAddress, password, hostname, id, peripheralName = decodeAddress(address)
@@ -88,7 +88,7 @@ function rperipheral.wrap(address, ...)
   pT.meta = nil
   for k,v in pairs(pT) do
     T[v] = function (...)
-      local stat, returnT = c:sendReq({"call", peripheralName, v, arg})
+      local stat, returnT = c:sendReq({"call", peripheralName, v, {...}})
       assert(stat, returnT)
       assert(returnT[1] ~= "Unauthorized", "Unauthorized")
       return table.unpack(returnT)
@@ -103,7 +103,7 @@ function rperipheral.call(side, method, ...)
   side = rperipheral.lookup[side] or side
   local isAddress, password, hostname, id, peripheralName = decodeAddress(side)
   if (not isAddress) and rperipheral.passthrough then
-    return peripheralBackup.call(side, method, table.unpack(arg))
+    return peripheralBackup.call(side, method, ...)
   end
   assert(isAddress, "Invalid address format, expects [password@]{id|hostname}:peripheral")
   c = client.new("rperipheral", {hostId = id, hostname=hostname})
@@ -112,7 +112,7 @@ function rperipheral.call(side, method, ...)
     assert(status, response) -- this will cause an error anytime this is not able to reach the server
     assert(response[1], "Password incorrect")
   end
-  local stat, returnT = c:sendReq({"call", peripheralName, method, arg})
+  local stat, returnT = c:sendReq({"call", peripheralName, method, {...}})
   assert(stat, returnT)
   assert(returnT[1] ~= "Unauthorized", "Unauthorized")
   return table.unpack(returnT)
